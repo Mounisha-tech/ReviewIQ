@@ -1,8 +1,13 @@
 import pandas as pd
 
-from preprocessing import clean_text
-from sentiment import load_sentiment_model
-from analytics import (
+from .data_processing import process_reviews
+from .preprocessing import clean_text
+from .sentiment import (
+    load_sentiment_model,
+    predict_sentiment
+)
+
+from .analytics import (
     calculate_product_metrics,
     calculate_sentiment_metrics,
     analyze_product_strengths_weaknesses,
@@ -11,603 +16,289 @@ from analytics import (
 
 
 # =========================================================
-# RUN REVIEWIQ PIPELINE
+# COMPLETE REVIEWIQ PIPELINE
 # =========================================================
 
 def run_reviewiq_pipeline(file_path):
     """
-    Run the complete ReviewIQ seller-side analytics pipeline.
+    Run the complete ReviewIQ seller analytics pipeline.
+
+    Flow:
 
     CSV
-        ↓
-    Load dataset
-        ↓
-    Normalize columns
-        ↓
-    Clean reviews
-        ↓
-    Load trained sentiment model
-        ↓
-    TF-IDF transformation
-        ↓
-    Sentiment prediction
-        ↓
-    Product analytics
-        ↓
-    Strengths / weaknesses
-        ↓
+      ↓
+    Data Processing
+      ↓
+    Text Cleaning
+      ↓
+    Sentiment Prediction
+      ↓
+    Product Metrics
+      ↓
+    Sentiment Metrics
+      ↓
+    Strengths & Weaknesses
+      ↓
     Recommendations
     """
 
+    print("\n========== ReviewIQ Pipeline ==========\n")
+
     # =====================================================
-    # 1. LOAD DATASET
+    # 1. LOAD + VALIDATE DATA
     # =====================================================
 
     print("1. Loading dataset...")
 
-    df = pd.read_csv(file_path)
+    df, quality_report = process_reviews(
+        file_path
+    )
 
     print(
         f"   Loaded {len(df)} reviews."
     )
 
-
     # =====================================================
-    # 2. NORMALIZE COLUMN NAMES
-    # =====================================================
-
-    print("2. Normalizing dataset columns...")
-
-    df.columns = [
-        str(column).strip().lower()
-        for column in df.columns
-    ]
-
-
-    # =====================================================
-    # 3. MAP AMAZON COLUMNS
+    # 2. CLEAN REVIEW TEXT
     # =====================================================
 
-    print("3. Mapping dataset columns...")
+    print("\n2. Cleaning review text...")
 
-    column_mapping = {
+    df = df.copy()
 
-        # Amazon → ReviewIQ
-        "star_rating": "rating",
-
-        "review_body": "review_text",
-
-        "review_headline": "review_headline",
-
-        "review_date": "review_date",
-
-        "product_title": "product_name",
-
-        "product_id": "product_id",
-
-        "customer_id": "customer_id",
-
-        "review_id": "review_id"
-    }
-
-    df = df.rename(
-        columns=column_mapping
-    )
-
-
-    # =====================================================
-    # 4. VALIDATE REQUIRED COLUMNS
-    # =====================================================
-
-    print("4. Validating dataset...")
-
-    required_columns = [
-        "rating",
-        "review_text"
-    ]
-
-    missing_columns = [
-        column
-        for column in required_columns
-        if column not in df.columns
-    ]
-
-    if missing_columns:
-
-        raise ValueError(
-            "Missing required columns: "
-            f"{missing_columns}\n"
-            f"Available columns: "
-            f"{df.columns.tolist()}"
-        )
-
-
-    # =====================================================
-    # 5. CLEAN REVIEW TEXT
-    # =====================================================
-
-    print("5. Cleaning review text...")
-
-    # Handle missing review text
-    df["review_text"] = (
-        df["review_text"]
-        .fillna("")
-        .astype(str)
-    )
-
-    # Apply NLP preprocessing
     df["cleaned_review"] = (
         df["review_text"]
+        .fillna("")
         .apply(clean_text)
     )
 
-
-    # =====================================================
-    # 6. REMOVE EMPTY REVIEWS
-    # =====================================================
-
-    before_count = len(df)
-
-    df = df[
-        df["cleaned_review"]
-        .str.strip()
-        .ne("")
-    ].copy()
-
-    removed_count = (
-        before_count - len(df)
+    print(
+        "   Text preprocessing completed."
     )
+
+    # =====================================================
+    # 3. LOAD TRAINED SENTIMENT MODEL
+    # =====================================================
+
+    print("\n3. Loading sentiment model...")
+
+    model, vectorizer = load_sentiment_model()
 
     print(
-        f"   Removed {removed_count} "
-        "empty reviews."
+        "   Sentiment model loaded."
     )
-
-    print(
-        f"   Reviews remaining: {len(df)}"
-    )
-
 
     # =====================================================
-    # 7. LOAD SAVED SENTIMENT MODEL
+    # 4. PREDICT SENTIMENT
     # =====================================================
 
-    print(
-        "6. Loading trained sentiment model..."
-    )
+    print("\n4. Predicting sentiment...")
 
-    model, vectorizer = (
-        load_sentiment_model()
-    )
-
-
-    # =====================================================
-    # 8. CREATE TF-IDF FEATURES
-    # =====================================================
-
-    print(
-        "7. Creating TF-IDF features..."
-    )
-
-    review_vectors = (
-        vectorizer.transform(
-            df["cleaned_review"]
+    df["sentiment"] = df[
+        "cleaned_review"
+    ].apply(
+        lambda review: predict_sentiment(
+            review,
+            model,
+            vectorizer
         )
     )
 
+    print(
+        "   Sentiment prediction completed."
+    )
 
     # =====================================================
-    # 9. PREDICT SENTIMENT
+    # 5. CALCULATE PRODUCT METRICS
     # =====================================================
 
     print(
-        "8. Predicting sentiment..."
+        "\n5. Calculating product metrics..."
     )
 
-    df["sentiment"] = (
-        model.predict(
-            review_vectors
-        )
+    product_metrics = calculate_product_metrics(
+        df
     )
 
+    print(
+        "   Product metrics calculated."
+    )
 
     # =====================================================
-    # 10. PRODUCT METRICS
+    # 6. CALCULATE SENTIMENT METRICS
     # =====================================================
 
     print(
-        "9. Calculating product metrics..."
+        "\n6. Calculating sentiment metrics..."
     )
 
-    product_metrics = (
-        calculate_product_metrics(
-            df
-        )
+    sentiment_metrics = calculate_sentiment_metrics(
+        df
     )
 
+    print(
+        "   Sentiment metrics calculated."
+    )
 
     # =====================================================
-    # 11. SENTIMENT ANALYTICS
+    # 7. ANALYZE STRENGTHS + WEAKNESSES
     # =====================================================
 
     print(
-        "10. Calculating sentiment analytics..."
+        "\n7. Analyzing product strengths and weaknesses..."
     )
 
-    sentiment_metrics = (
-        calculate_sentiment_metrics(
-            df
-        )
+    insights = analyze_product_strengths_weaknesses(
+        df
     )
 
+    print(
+        "   Product insights generated."
+    )
 
     # =====================================================
-    # 12. STRENGTHS AND WEAKNESSES
+    # 8. GENERATE RECOMMENDATIONS
     # =====================================================
 
     print(
-        "11. Identifying strengths "
-        "and weaknesses..."
+        "\n8. Generating recommendations..."
     )
 
-    insights = (
-        analyze_product_strengths_weaknesses(
-            df
-        )
+    recommendations = generate_recommendations(
+        insights["strengths"],
+        insights["weaknesses"],
+        sentiment_metrics["negative_count"]
     )
 
-    strengths = insights[
-        "strengths"
-    ]
-
-    weaknesses = insights[
-        "weaknesses"
-    ]
-
-
-    # =====================================================
-    # 13. COUNT NEGATIVE REVIEWS
-    # =====================================================
-
-    total_negative_reviews = (
-        sentiment_metrics[
-            "negative_count"
-        ]
+    print(
+        "   Recommendations generated."
     )
 
-
     # =====================================================
-    # 14. GENERATE RECOMMENDATIONS
+    # 9. RETURN ALL RESULTS
     # =====================================================
 
     print(
-        "12. Generating recommendations..."
-    )
-
-    recommendations = (
-        generate_recommendations(
-
-            strengths,
-
-            weaknesses,
-
-            total_negative_reviews
-        )
-    )
-
-
-    # =====================================================
-    # 15. RETURN COMPLETE RESULTS
-    # =====================================================
-
-    print(
-        "13. ReviewIQ pipeline completed!"
+        "\n9. ReviewIQ pipeline completed successfully."
     )
 
     return {
-
+        # Processed dataset
         "data": df,
 
-        "product_metrics":
-            product_metrics,
+        # Data quality information
+        "quality_report": quality_report,
 
-        "sentiment_metrics":
-            sentiment_metrics,
+        # Product-level metrics
+        "product_metrics": product_metrics,
 
-        "strengths":
-            strengths,
+        # Sentiment-level metrics
+        "sentiment_metrics": sentiment_metrics,
 
-        "weaknesses":
-            weaknesses,
+        # Product strengths + weaknesses
+        "insights": insights,
 
-        "recommendations":
-            recommendations
+        # Seller recommendations
+        "recommendations": recommendations
     }
 
 
 # =========================================================
-# TEST COMPLETE PIPELINE
+# DIRECT PIPELINE TEST
 # =========================================================
 
 if __name__ == "__main__":
-
-    print(
-        "\n========== ReviewIQ Pipeline ==========\n"
-    )
-
-
-    # =====================================================
-    # RUN PIPELINE
-    # =====================================================
 
     results = run_reviewiq_pipeline(
         "data/amazon_reviews.csv"
     )
 
-
-    # =====================================================
-    # PRODUCT SUMMARY
-    # =====================================================
-
     print(
-        "\n========== PRODUCT SUMMARY ==========\n"
+        "\n========== PIPELINE TEST ==========\n"
     )
 
-    product_metrics = (
-        results[
-            "product_metrics"
-        ]
-    )
+    # -----------------------------------------------------
+    # Product Metrics
+    # -----------------------------------------------------
+
+    print("Total Reviews:")
 
     print(
-        "Total Reviews:",
-        product_metrics[
+        results["product_metrics"][
             "total_reviews"
         ]
     )
 
-    print(
-        "Average Rating:",
-        round(
-            product_metrics[
-                "average_rating"
-            ],
-            2
-        )
-    )
-
-
-    # =====================================================
-    # RATING DISTRIBUTION
-    # =====================================================
+    print("\nAverage Rating:")
 
     print(
-        "\nRating Distribution:"
-    )
-
-    print(
-        product_metrics[
-            "rating_distribution"
+        results["product_metrics"][
+            "average_rating"
         ]
     )
 
+    # -----------------------------------------------------
+    # Sentiment Metrics
+    # -----------------------------------------------------
 
-    # =====================================================
-    # SENTIMENT SUMMARY
-    # =====================================================
-
-    print(
-        "\n========== SENTIMENT SUMMARY ==========\n"
-    )
-
-    sentiment_metrics = (
-        results[
-            "sentiment_metrics"
-        ]
-    )
+    print("\nPositive Reviews:")
 
     print(
-        "Positive Reviews:",
-        sentiment_metrics[
+        results["sentiment_metrics"][
             "positive_count"
         ]
     )
 
+    print("\nNeutral Reviews:")
+
     print(
-        "Neutral Reviews:",
-        sentiment_metrics[
+        results["sentiment_metrics"][
             "neutral_count"
         ]
     )
 
+    print("\nNegative Reviews:")
+
     print(
-        "Negative Reviews:",
-        sentiment_metrics[
+        results["sentiment_metrics"][
             "negative_count"
         ]
     )
 
+    # -----------------------------------------------------
+    # Strengths
+    # -----------------------------------------------------
 
-    # =====================================================
-    # SENTIMENT PERCENTAGES
-    # =====================================================
-
-    print(
-        "\nPositive Percentage:",
-        round(
-            sentiment_metrics[
-                "positive_percentage"
-            ],
-            2
-        ),
-        "%"
-    )
+    print("\nProduct Strengths:")
 
     print(
-        "Neutral Percentage:",
-        round(
-            sentiment_metrics[
-                "neutral_percentage"
-            ],
-            2
-        ),
-        "%"
+        results["insights"]["strengths"]
     )
+
+    # -----------------------------------------------------
+    # Weaknesses
+    # -----------------------------------------------------
+
+    print("\nProduct Weaknesses:")
 
     print(
-        "Negative Percentage:",
-        round(
-            sentiment_metrics[
-                "negative_percentage"
-            ],
-            2
-        ),
-        "%"
+        results["insights"]["weaknesses"]
     )
 
+    # -----------------------------------------------------
+    # Recommendations
+    # -----------------------------------------------------
 
-    # =====================================================
-    # PRODUCT STRENGTHS
-    # =====================================================
+    print("\nRecommendations:")
 
-    print(
-        "\n========== PRODUCT STRENGTHS ==========\n"
-    )
-
-    strengths = results[
-        "strengths"
-    ]
-
-    if strengths:
-
-        for strength, count in strengths.items():
-
-            print(
-                f"{strength}: {count}"
-            )
-
-    else:
-
-        print(
-            "No significant strengths detected."
-        )
-
-
-    # =====================================================
-    # PRODUCT WEAKNESSES
-    # =====================================================
-
-    print(
-        "\n========== PRODUCT WEAKNESSES ==========\n"
-    )
-
-    weaknesses = results[
-        "weaknesses"
-    ]
-
-    if weaknesses:
-
-        for weakness, count in weaknesses.items():
-
-            print(
-                f"{weakness}: {count}"
-            )
-
-    else:
-
-        print(
-            "No significant weaknesses detected."
-        )
-
-
-    # =====================================================
-    # RECOMMENDATIONS
-    # =====================================================
-
-    print(
-        "\n========== REVIEWIQ RECOMMENDATIONS ==========\n"
-    )
-
-    recommendations = results[
+    for recommendation in results[
         "recommendations"
-    ]
-
-    if recommendations:
-
-        for recommendation in recommendations:
-
-            print(
-                f"Type: "
-                f"{recommendation['type']}"
-            )
-
-            print(
-                f"Category: "
-                f"{recommendation['category']}"
-            )
-
-            print(
-                f"Mentions: "
-                f"{recommendation['mentions']}"
-            )
-
-            # Improvement recommendations
-            # contain percentage information
-            if (
-                recommendation["type"]
-                == "improvement"
-            ):
-
-                print(
-                    "Negative Review Percentage: "
-                    f"{recommendation['percentage']}%"
-                )
-
-            print(
-                f"Priority: "
-                f"{recommendation['priority']}"
-            )
-
-            print(
-                f"Recommendation: "
-                f"{recommendation['message']}"
-            )
-
-            print(
-                "-" * 60
-            )
-
-    else:
+    ]:
 
         print(
-            "No recommendations generated."
+            recommendation
         )
-
-
-    # =====================================================
-    # SAMPLE PREDICTIONS
-    # =====================================================
 
     print(
-        "\n========== SAMPLE SENTIMENT PREDICTIONS ==========\n"
+        "\n===================================="
     )
-
-    sample_data = results[
-        "data"
-    ].head(5)
-
-    for _, row in sample_data.iterrows():
-
-        print(
-            "Review:",
-            row["review_text"]
-        )
-
-        print(
-            "Sentiment:",
-            row["sentiment"]
-        )
-
-        print(
-            "-" * 60
-        )

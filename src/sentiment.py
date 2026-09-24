@@ -10,8 +10,8 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
-from data_processing import process_reviews
-from preprocessing import clean_text
+from .data_processing import process_reviews
+from .preprocessing import clean_text
 
 
 # ---------------------------------------------------------
