@@ -229,5 +229,3 @@ areas require attention.
 
 **Mounisha Vuppu**
 
-B.Tech --- Computer Science & Engineering\
-VIT-AP
