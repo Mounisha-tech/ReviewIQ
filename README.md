@@ -22,8 +22,6 @@ recommendations.
 -   Identify product weaknesses / areas of concern from negative review
     patterns
 -   Generate seller-focused recommendations
--   Interactive dark SaaS-style Streamlit dashboard
--   Interactive Plotly sentiment and rating visualizations
 
 ## How It Works
 
