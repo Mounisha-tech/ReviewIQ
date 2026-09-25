@@ -5,6 +5,38 @@ product reviews and converts review data into product performance
 insights, sentiment trends, strengths, weaknesses, and actionable
 recommendations.
 
+## 🌐 Live Demo
+
+🚀 **Try ReviewIQ:** [Open the Live Dashboard](YOUR_STREAMLIT_APP_URL)
+
+> Upload a product review CSV and explore sentiment analysis, rating distribution, product strengths, areas of concern, and actionable recommendations.
+
+## 📸 Demo
+
+### Product Overview
+
+![ReviewIQ Product Overview](screenshots/product-overview.png)
+
+The dashboard provides a quick overview of total reviews, average rating, and overall sentiment.
+
+### Sentiment & Rating Analysis
+
+![ReviewIQ Sentiment Analysis](screenshots/sentiment-analysis.png)
+
+Interactive visualizations show the distribution of positive, neutral, and negative reviews along with the product's rating distribution.
+
+### Product Strengths & Areas of Concern
+
+![ReviewIQ Product Insights](screenshots/product-insights.png)
+
+ReviewIQ identifies frequently mentioned positive and negative product aspects from customer reviews.
+
+### Actionable Recommendations
+
+![ReviewIQ Recommendations](screenshots/recommendations.png)
+
+The system converts review patterns into seller-focused recommendations with priority levels.
+
 ## Features
 
 -   Upload product reviews as a CSV file
