@@ -7,7 +7,7 @@ recommendations.
 
 ## 🌐 Live Demo
 
-🚀 **Try ReviewIQ:** [Open the Live Dashboard](YOUR_STREAMLIT_APP_URL)
+🚀 **Try ReviewIQ:** [Open the Live Dashboard](https://reviewiq-mounisha.streamlit.app/)
 
 > Upload a product review CSV and explore sentiment analysis, rating distribution, product strengths, areas of concern, and actionable recommendations.
 
