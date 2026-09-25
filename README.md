@@ -1,4 +1,4 @@
-# ReviewIQ --- Intelligent Review Analysis System
+# ReviewIQ - Intelligent Review Analysis System
 
 ReviewIQ is a seller-side analytics dashboard that analyzes e-commerce
 product reviews and converts review data into product performance
