@@ -15,25 +15,25 @@ recommendations.
 
 ### Product Overview
 
-![ReviewIQ Product Overview](screenshots/product-overview.png)
+![ReviewIQ Product Overview](Screenshots/product-overview.png)
 
 The dashboard provides a quick overview of total reviews, average rating, and overall sentiment.
 
 ### Sentiment & Rating Analysis
 
-![ReviewIQ Sentiment Analysis](screenshots/sentiment-analysis.png)
+![ReviewIQ Sentiment Analysis](Screenshots/sentiment-analysis.png)
 
 Interactive visualizations show the distribution of positive, neutral, and negative reviews along with the product's rating distribution.
 
 ### Product Strengths & Areas of Concern
 
-![ReviewIQ Product Insights](screenshots/product-insights.png)
+![ReviewIQ Product Insights](Screenshots/product-insights.png)
 
 ReviewIQ identifies frequently mentioned positive and negative product aspects from customer reviews.
 
 ### Actionable Recommendations
 
-![ReviewIQ Recommendations](screenshots/recommendations.png)
+![ReviewIQ Recommendations](Screenshots/recommendations.png)
 
 The system converts review patterns into seller-focused recommendations with priority levels.
 
